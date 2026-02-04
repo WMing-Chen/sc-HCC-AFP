@@ -23,14 +23,14 @@ data.raw = data
 sc.pp.highly_variable_genes(data, n_top_genes=2000) #, min_mean=0.0125, max_mean=3, min_disp=0.5)
 sc.pl.highly_variable_genes(data, show=False)
 
-plt.savefig("Scanpy_Cluster/highly_variable_genes.pdf")
+plt.savefig("Fig1/highly_variable_genes.pdf")
 data = data[:, data.var.highly_variable] 
 
 sc.pp.scale(data, max_value=10)
 sc.tl.pca(data, svd_solver='arpack')# svd_solver   SVD 
 sc.pl.pca_variance_ratio(data, log=True, show = False)
 plt.tight_layout()
-plt.savefig("Scanpy_Cluster/PCA.pdf")
+plt.savefig("Fig1/PCA.pdf")
 sce.pp.harmony_integrate(data, 'Sample') # 
 sc.pp.neighbors(data, use_rep = 'X_pca_harmony', n_pcs=50) # 
 sc.tl.louvain(data, resolution=1) #sc.tl.louvain(data)  sc.tl.leiden(data) 
@@ -52,7 +52,7 @@ cols = ["#DC050C", "#FB8072", "#1965B0", "#7BAFDE", "#882E72",
 fig, ax = plt.subplots(figsize=(7.5, 6))
 sc.pl.umap(data, color=['Cluster'], ax=ax, show=False, size=5, palette=cols, title = 'Cluster') # , legend_loc='on data'
 plt.tight_layout()
-# plt.savefig("Scanpy_Cluster/Umap.pdf")
+# plt.savefig("Fig1/Umap.pdf")
 
 
 from matplotlib.colors import LinearSegmentedColormap
@@ -108,7 +108,7 @@ fig, ax = plt.subplots(figsize=(7, 5))
 sc.pl.umap(data, color=['Major_Celltype'], ax=ax, show=False, palette=cols, size=5)
 
 plt.tight_layout()
-plt.savefig("Scanpy_Cluster/Umap_Major_Celltype.pdf")
+plt.savefig("Fig1/Umap_Major_Celltype.pdf")
 data.write(results_file)
 
 marker_genes = ["IL7R", "CD3E", "CCR6", #CD4+ T, T reg, "CD4", "CCR6", "TRBC2", "CCR7", "FOXP3", 
@@ -133,6 +133,6 @@ data.obs['Major_Celltype'] = pd.Categorical(data.obs['Major_Celltype'], categori
 fig, ax = plt.subplots(figsize=(10, 5)) 
 sc.pl.dotplot(data, marker_genes, ax=ax, groupby='Major_Celltype', show=False)
 plt.tight_layout()
-plt.savefig("Scanpy_Cluster/gene_Dot_celltype.pdf")
+plt.savefig("Fig1/gene_Dot_celltype.pdf")
 
 

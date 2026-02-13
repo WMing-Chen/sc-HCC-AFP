@@ -5,6 +5,11 @@ library(ComplexHeatmap)
 library(dplyr)
 library(circlize)
 
+setwd("/home/chenweiming/Project/HCC_scRNAseq/luo/")
+
+fig_dir <- "./00Figures/Fig1"
+data_dir <- "./data"
+
 clinical <- read.csv("./data/Sample_information.csv", check.names = FALSE)
 
 clinical[["AFP..g.L."]] <- log10(as.numeric(clinical[["AFP..g.L."]]) + 1)
@@ -101,30 +106,38 @@ library("survminer")
 
 
 surival_data<-read.csv("./data/surival_data.csv")
-surival_data$Group = surival_data$AFP_status_group
+head(surival_data)
 
-fit <- survfit(Surv(as.numeric(OS.time_months), as.numeric(OS.state)) ~ Group, data = surival_data)
+surival_data$AFP_status_group[surival_data$AFP_status_group == "AFP_Neg"] <- "AFP-"
+surival_data$AFP_status_group[surival_data$AFP_status_group == "AFP_Pos"] <- "AFP+"
+
+
+surival_data$Group = surival_data$AFP_status_group
+table(surival_data$Group)
+
+fit <- survfit(Surv(as.numeric(OS_time), as.numeric(OS_state)) ~ Group, data = surival_data)
 
 ggsurvplot(
   fit, 
   data = surival_data, 
   title = " ",     # title
   font.main = c(14, "bold"),  # title font
-  font.x = 14, 
-  font.y = 14,  # axis label font
-  font.tickslab = 12,  # tick label font
+  font.x = 18, 
+  font.y = 18,  # axis label font
+  font.tickslab = 14,  # tick label font
   pval = TRUE,  # show p-value
-  pval.size = 4.5,  # p-value font size
-  size = 1.2,  # line width
+  pval.size = 6,  # p-value font size
+  size = 1.5,  # line width
   linetype = "solid",  # solid lines
-  palette = c("#DC0000FF", "#1f78b4"),  # line colors
-  legend = c(0.85, 0.85),  # legend position
+  palette = c("#1f78b4", "#DC0000FF"),  # line colors
+  legend = c(0.2, 0.45),  # legend position
   legend.title = " ",  # legend title
-  legend.labs = c("AFP+(147)", "AFP-(130)"),  # keep counts consistent with sample size
+  legend.labs = c("AFP-(35)", "AFP+(38)"),  # keep counts consistent with sample size
+  font.legend = 14, 
   xlab = "Time(Months)"  # x-axis label
 )
 
-ggsave(filename = "./Fig1/surival_scRNA_HCC_AFP.pdf", width = 4.5,height = 4.3)
+ggsave(filename = "./00Figures/Fig1/surival_scRNA_HCC_AFP.pdf", width = 4.5,height = 4.3)
 
 
 # TCGA-LIHC Survival Analysis
@@ -132,6 +145,7 @@ library("survival")
 library("survminer")
 
 surival_data<-read.table("./data/TCGA_phenotype_AFP_value.txt", sep = "\t", header = TRUE)
+head(surival_data)
 
 # Group by AFP_value: >=20 as AFP+ (high), <20 as AFP- (low)
 surival_data$Group = ifelse(surival_data$AFP_value >= 20, "AFP+", "AFP-")
@@ -143,18 +157,19 @@ ggsurvplot(
   data = surival_data, 
   title = " ",     # title
   font.main = c(14, "bold"),  # title font
-  font.x = 14, 
-  font.y = 14,  # axis label font
-  font.tickslab = 12,  # tick label font
+  font.x = 18, 
+  font.y = 18,  # axis label font
+  font.tickslab = 14,  # tick label font
   pval = TRUE,  # show p-value
-  pval.size = 4.5,  # p-value font size
-  size = 1.2,  # line width
+  pval.size = 6,  # p-value font size
+  size = 1.5,  # line width
   linetype = "solid",  # solid lines
   palette = c("#DC0000FF", "#1f78b4"),  # line colors
-  legend = c(0.85, 0.85),  # legend position
+  legend = c(0.8, 0.85),  # legend position
   legend.title = " ",  # legend title
   legend.labs = c("AFP+(147)", "AFP-(130)"),  # keep counts consistent with sample size
+  font.legend = 14, 
   xlab = "Time(Months)"  # x-axis label
 )
 
-ggsave(filename = "./Fig1/surival_TCGA_LIHC_AFP.pdf", width = 4.5,height = 4.3)
+ggsave(filename = "./00Figures/Fig1/surival_TCGA_LIHC_AFP.pdf", width = 4.5,height = 4.3)

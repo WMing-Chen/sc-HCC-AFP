@@ -36,11 +36,11 @@ sc.pp.neighbors(data, use_rep = 'X_pca_harmony', n_pcs=50) #
 sc.tl.louvain(data, resolution=1) #sc.tl.louvain(data)  sc.tl.leiden(data) 
 sc.tl.umap(data)
 
-sc.tl.louvain(data, key_added="louvain_res1_3", resolution=1.3)
+sc.tl.louvain(data, key_added="louvain_res1", resolution=1)
 sc.tl.umap(data)
 data.write(results_file)
 
-data.obs['Cluster'] = data.obs['louvain_res1_3']
+data.obs['Cluster'] = data.obs['louvain_res1']
 
 cols = ["#DC050C", "#FB8072", "#1965B0", "#7BAFDE", "#882E72",
           "#B17BA6", "#FF7F00", "#FDB462", "#E7298A", "#E78AC3",
@@ -57,33 +57,7 @@ plt.tight_layout()
 
 from matplotlib.colors import LinearSegmentedColormap
 cmap = LinearSegmentedColormap.from_list('custom', ["lightgrey", "orange", "red"])
-sc.pl.umap(data, 
-           color=["CD3D", "CD8A", "TRDC", # CD8+ T, γδT, 
-              "IL7R", "CD3E", "CCR6",     #CD4+ T, T reg,"CD4", "FOXP3", "CD14", "CD19", "IL2RA", "ITGB1", "CD3E", 
-              "NKG7", "GNLY", "FCGR3A", # NK  CD56:"NCAM1",  CD16:"FCGR3A"
-              "CD79A", "MS4A1", # B
-              "IGHG1", "MZB1"  # plasma cells
-                   ],
-           cmap=cmap,
-           show=False)
-sc.pl.umap(data, 
-           color=[ "CD14", "FCN1", "APOBEC3A",  # monocytes, CD16:"FCGR3A"  CD11C:ITGAX  "THBS1", 
-              "CD68", "CD163", # macrophages, 
-              "CD1C", "LAMP3", "FCER1A", # dendritic cells, 
-              "TPSAB1" # mast cells 
-              # "CSF3R", "S100A8" # neutrophils
-                   ], 
-           cmap=cmap,
-           show=False)
-sc.pl.umap(data, 
-           color=[
-              "VWF",  # endothelial cells   PECAM1
-              "COL1A1", "COL1A2", "DCN", "LUM", # fibroblasts
-              "KRT8", "EPCAM", "KRT7", "KRT19" # epithelial cells
-                   ], 
-           cmap=cmap,
-           vmax=2,
-           show=False)
+
 # create a dictionary to map cluster to annotation label
 cluster2annotation = {
      '5': 'NK cells', '9': 'NK cells',

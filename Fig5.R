@@ -228,13 +228,13 @@ treg_genes <- c(
   "RAB9A", "CD4", "HTATIP2", "PHLDA1", "DUSP16", "ACP5", "SELL", "TYMP", "ZNF292"
 )
 
-Mye_gse151530 <- subset(Hep_gse151530, Type %in% c("Myeloid Cells", "Myeloid cells", "Myeloid"))
-T_gse151530 <- subset(Hep_gse151530, Type %in% c("T cells", "T cell", "T"))
+Mye_gse151530 <- subset(Hep_gse151530, Type %in% c("Myeloid Cells"))
+T_gse151530 <- subset(Hep_gse151530, Type %in% c("T cells"))
 
-Mye_gse151530 <- AddModuleScore(Mye_gse151530, features = list(dc_cxcl10_genes), ctrl = 100, name = "DC_CXCL10")
+Mye_gse151530 <- AddModuleScore(Mye_gse151530, features = list(dc_cxcl10_genes), name = "DC_CXCL10")
 Mye_gse151530$DC_CXCL10_Score <- Mye_gse151530$DC_CXCL101
 
-T_gse151530 <- AddModuleScore(T_gse151530, features = list(treg_genes), ctrl = 100, name = "Treg")
+T_gse151530 <- AddModuleScore(T_gse151530, features = list(treg_genes), name = "Treg")
 T_gse151530$Treg_Score <- T_gse151530$Treg1
 
 p5e_left <- FeaturePlot(

@@ -29,6 +29,7 @@ dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
 # Fig2a–b: Tumor clustering and AFP group distribution
 ################################################################################
 Hep <- readRDS(file.path(data_dir, "HCC_Tumor.rds"))
+Hep@meta.data$AFP_status_group <- recode(Hep@meta.data$AFP_status_group, "AFP_Pos" = "AFP+","AFP_Neg" = "AFP-")
 table(Hep@meta.data$AFP_status_group)
 
 Hep <- NormalizeData(Hep) %>%
@@ -102,7 +103,7 @@ top3 <- Markers_Findall %>%
   group_by(cluster) %>%
   slice_max(order_by = avg_log2FC, n = 3, with_ties = FALSE)
 
-plot_order <- c("Tumor_C8_PAGE1","Tumor_C7_PCSK1N","Tumor_C9_CD164","Tumor_C3_STMN1","Tumor_C0_FABP1","Tumor_C5_HLA-DRA","Tumor_C1_CYP3A4","Tumor_C2_SOX4","Tumor_C4_MLXIPL","Tumor_C6_AFP")
+plot_order <- c("Tumor_C0_FABP1","Tumor_C1_CYP3A4","Tumor_C2_SOX4","Tumor_C3_STMN1","Tumor_C4_MLXIPL","Tumor_C5_HLA−DRA","Tumor_C6_AFP","Tumor_C7_PCSK1N","Tumor_C8_PAGE1","Tumor_C9_CD164")
 
 top3 <- top3 %>%
   mutate(cluster = factor(cluster, levels = plot_order, ordered = TRUE))
@@ -116,7 +117,7 @@ DotPlot2 <- jjDotPlot(
   object = Hep,
   id = "subcelltype",
   gene = top3$gene,
-  cluster.order = plot_order,
+  # cluster.order = plot_order,
   gene.order = rev(top3$gene),
   ytree = FALSE,
   legend.position = "right",
@@ -128,19 +129,6 @@ DotPlot2 <- jjDotPlot(
 DotPlot2
 ggsave(file.path(fig_dir, "Fig2c_Tumor_markers_dotplot.pdf"), plot = DotPlot2, width = 7.5, height = 7.5)
 
-################################################################################
-# Tumor subcelltype labels (Tumor_C{cluster}_{top1_marker})
-################################################################################
-
-top1 <- Markers_Findall %>%
-  group_by(cluster) %>%
-  slice_max(order_by = avg_log2FC, n = 1, with_ties = FALSE)
-
-sub_name <- paste0("Tumor_C", top1$cluster, "_", top1$gene)
-cluster_mapping <- setNames(sub_name, top1$cluster)
-Hep@meta.data$tumor_subcelltype <- as.character(Hep@meta.data$Seu_Clusters)
-Hep@meta.data$tumor_subcelltype <- cluster_mapping[Hep@meta.data$tumor_subcelltype]
-Hep@meta.data$tumor_subcelltype <- factor(Hep@meta.data$tumor_subcelltype, levels = sub_name)
 
 ################################################################################
 # Fig2d: Ro/e heatmap (AFP_Pos vs AFP_Neg)
@@ -149,7 +137,7 @@ Hep@meta.data$tumor_subcelltype <- factor(Hep@meta.data$tumor_subcelltype, level
 source("./utils/ROE_Heatmap_Function.R")
 myPalette <- colorRampPalette(brewer.pal(9, "YlOrRd")[1:7])
 
-plot.data <- ROIE(table(Hep@meta.data[, c("tumor_subcelltype", "AFP_status_group")])) %>%
+plot.data <- ROIE(table(Hep@meta.data[, c("subcelltype", "AFP_status_group")])) %>%
   reshape2::melt() %>%
   mutate(value = pmin(value, 3))
 
@@ -165,7 +153,10 @@ p2d <- ggplot(plot.data, aes(Var2, forcats::fct_rev(Var1), fill = value)) +
   geom_tile() +
   geom_text(aes(label = round(value, 2)), color = "black") +
   scale_fill_gradientn(colours = myPalette(100)) +
-  scale_x_discrete(limits = c("AFP_Pos", "AFP_Neg")) +
+  scale_x_discrete(
+    limits = c("AFP_Pos", "AFP_Neg"),
+    labels = c("AFP_Pos" = "AFP+", "AFP_Neg" = "AFP-")
+  ) +
   labs(x = "", y = "", fill = "Ro/e") +
   theme_cowplot() +
   theme(
@@ -174,15 +165,17 @@ p2d <- ggplot(plot.data, aes(Var2, forcats::fct_rev(Var1), fill = value)) +
     axis.ticks = element_blank()
   ) +
   guides(fill = guide_colourbar(barwidth = 0.5, barheight = 12))
-ggsave(file.path(fig_dir, "Fig2d_Tumor_ROE_heatmap.pdf"), plot = p2d, device = "pdf", width = 7.5, height = 9, units = "in")
+p2d
+ggsave(file.path(fig_dir, "Fig2d_Tumor_ROE_heatmap.pdf"), plot = p2d, device = "pdf", width = 4.5, height = 6.5, units = "in")
 
 ################################################################################
 # Fig2e: Box plots of Tumor_C1/C3/C6 abundance by AFP group
 ################################################################################
 
 meta <- Hep@meta.data %>%
-  dplyr::select(orig.ident, AFP_status_group, tumor_subcelltype)
+  dplyr::select(orig.ident, AFP_status_group, subcelltype)
 colnames(meta) <- c("orig.ident", "Group", "celltype")
+table(meta$celltype)
 
 meta_percent <- meta %>%
   group_by(orig.ident, Group, celltype) %>%
@@ -192,11 +185,11 @@ meta_percent <- meta %>%
   dplyr::select(orig.ident, values, Group, celltype)
 meta_percent <- unique(meta_percent)
 
-sel_celltypes <- c(
-  levels(Hep@meta.data$tumor_subcelltype)[grepl("^Tumor_C1_", levels(Hep@meta.data$tumor_subcelltype))],
-  levels(Hep@meta.data$tumor_subcelltype)[grepl("^Tumor_C3_", levels(Hep@meta.data$tumor_subcelltype))],
-  levels(Hep@meta.data$tumor_subcelltype)[grepl("^Tumor_C6_", levels(Hep@meta.data$tumor_subcelltype))]
-)
+table(Hep@meta.data$subcelltype)
+table(meta_percent$celltype)
+length(unique(Hep@meta.data$Sample))
+
+sel_celltypes <- c("Tumor_C1_CYP3A4","Tumor_C3_STMN1","Tumor_C6_AFP")
 meta_percent <- meta_percent %>% filter(celltype %in% sel_celltypes)
 
 source("./utils/CellType_Group_BoxPlot_Function.R")
@@ -208,57 +201,75 @@ p2e <- Groups_box_plot(
   Group_top = "celltype",
   Group_top_order = sel_celltypes,
   Group_box = "Group",
-  Group_box_order = c("AFP_Pos", "AFP_Neg"),
+  Group_box_order = c("AFP+", "AFP-"),
   title_name = "Tumor subcelltype percentages across samples",
   sig_lable = TRUE
 )
+p2e
 ggsave(file.path(fig_dir, "Fig2e_Tumor_C1_C3_C6_abundance_boxplot.pdf"), plot = p2e, device = "pdf", width = 12, height = 5, units = "in")
-
+ 
 ################################################################################
 # Fig2f–g: TCGA-LIHC (GSVA signature scores + survival)
 ################################################################################
 
-tcga_expr <- read.table(file.path(data_dir, "TCGA_matrix.txt"), header = TRUE, sep = "\t", row.names = 1, check.names = FALSE)
+tcga_expr <- read.table(file.path(data_dir, "TCGA_matrix(all_sample).txt"), header = TRUE, sep = "\t", row.names = 1, check.names = FALSE)
 tcga_expr <- as.matrix(tcga_expr)
+tcga_expr[1:5,1:5]
 
 tcga_pheno <- read.table(file.path(data_dir, "TCGA_phenotype_AFP_value.txt"), header = TRUE, sep = "\t", check.names = FALSE)
+head(tcga_pheno)
+tcga_pheno$AFP_Group = ifelse(tcga_pheno$AFP_value >= 20, "AFP+", "AFP-")
+table(tcga_pheno$AFP_Group)
 tcga_pheno$AFP_Group <- factor(tcga_pheno$AFP_Group, levels = c("AFP+", "AFP-"))
 rownames(tcga_pheno) <- tcga_pheno$sample_id
 
+tcga_expr = tcga_expr[, rownames(tcga_pheno)]
+dim(tcga_expr)
+
+head(Markers_Findall)
 top50 <- Markers_Findall %>%
   filter(p_val_adj < 0.05) %>%
   group_by(cluster) %>%
   slice_max(order_by = avg_log2FC, n = 50, with_ties = FALSE)
 
 geneset_list <- list(
-  Tumor_C1 = unique(top50$gene[top50$cluster %in% c(1)]),
-  Tumor_C3 = unique(top50$gene[top50$cluster %in% c(3)]),
-  Tumor_C6 = unique(top50$gene[top50$cluster %in% c(6)])
+  Tumor_C1 = unique(top50$gene[top50$cluster %in% c("Tumor_C1_CYP3A4")]),
+  Tumor_C3 = unique(top50$gene[top50$cluster %in% c("Tumor_C3_STMN1")]),
+  Tumor_C6 = unique(top50$gene[top50$cluster %in% c("Tumor_C6_AFP")])
 )
 
 ES <- gsva(tcga_expr, geneset_list)
 ES <- as.data.frame(t(ES))
+head(ES)
 ES$AFP_Group <- tcga_pheno[rownames(ES), "AFP_Group"]
 
 ES_long <- ES %>%
   tibble::rownames_to_column("sample_id") %>%
   pivot_longer(cols = c("Tumor_C1", "Tumor_C3", "Tumor_C6"), names_to = "Signature", values_to = "Score")
+head(ES_long)
 
 p2f <- ggplot(ES_long, aes(x = AFP_Group, y = Score, fill = AFP_Group)) +
   geom_boxplot(outlier.shape = NA) +
   geom_jitter(position = position_jitter(width = 0.2), size = 1.2, color = "black", alpha = 0.6) +
-  facet_wrap(~Signature, scales = "free_y") +
+  facet_wrap(~Signature, scales = "free_y", labeller = as_labeller(c(
+    "Tumor_C1" = "Tumor C1 score",
+    "Tumor_C3" = "Tumor C3 score",
+    "Tumor_C6" = "Tumor C6 score"
+  ))) +
   scale_fill_manual(values = c("AFP+" = "#DC050C", "AFP-" = "#386cb0")) +
-  labs(x = "", y = "GSVA score") +
-  theme_bw() +
+  labs(x = "", y = "Score in TCGA LIHC") +
+  stat_compare_means(comparisons = list(c("AFP+", "AFP-")),method = "wilcox.test", label = "p.signif") +
+  theme_bw(base_size = 16) +
   theme(
     legend.position = "none",
     panel.grid = element_blank(),
     axis.text.x = element_text(color = "black"),
     axis.text.y = element_text(color = "black"),
-    strip.text = element_text(face = "bold")
-  )
-ggsave(file.path(fig_dir, "Fig2f_TCGA_Tumor_C1_C3_C6_signature_boxplots.pdf"), plot = p2f, width = 9, height = 4.5)
+    strip.text = element_text(face = "bold"),
+    strip.background = element_blank()
+  )+ coord_cartesian(ylim = c(-1, 1))
+p2f
+ggsave(file.path(fig_dir, "Fig2f_TCGA_Tumor_C1_C3_C6_signature_boxplots.pdf"), plot = p2f, width = 7.5, height = 3.5)
 
 surival_data <- tcga_pheno
 for (sig in c("Tumor_C1", "Tumor_C3", "Tumor_C6")) {
@@ -275,7 +286,8 @@ for (sig in c("Tumor_C1", "Tumor_C3", "Tumor_C6")) {
     legend.title = " ",
     xlab = "Time(Months)"
   )
-  ggsave(filename = file.path(fig_dir, paste0("Fig2g_TCGA_survival_", sig, ".pdf")), plot = p$plot, width = 4.5, height = 4.3)
+  print(p)
+  # ggsave(filename = file.path(fig_dir, paste0("Fig2g_TCGA_survival_", sig, ".pdf")), plot = p$plot, width = 4.5, height = 4.3)
 }
 
 ################################################################################

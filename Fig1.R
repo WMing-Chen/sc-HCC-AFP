@@ -149,6 +149,7 @@ head(surival_data)
 
 # Group by AFP_value: >=20 as AFP+ (high), <20 as AFP- (low)
 surival_data$Group = ifelse(surival_data$AFP_value >= 20, "AFP+", "AFP-")
+table(surival_data$Group)
 
 fit <- survfit(Surv(as.numeric(OS.time_months), as.numeric(OS.state)) ~ Group, data = surival_data)
 
@@ -164,12 +165,58 @@ ggsurvplot(
   pval.size = 6,  # p-value font size
   size = 1.5,  # line width
   linetype = "solid",  # solid lines
-  palette = c("#DC0000FF", "#1f78b4"),  # line colors
+  palette = c("#1f78b4", "#DC0000FF"),  # line colors
   legend = c(0.8, 0.85),  # legend position
   legend.title = " ",  # legend title
-  legend.labs = c("AFP+(147)", "AFP-(130)"),  # keep counts consistent with sample size
+  legend.labs = c("AFP-(147)", "AFP+(130)"),  # keep counts consistent with sample size
   font.legend = 14, 
   xlab = "Time(Months)"  # x-axis label
 )
 
 ggsave(filename = "./00Figures/Fig1/surival_TCGA_LIHC_AFP.pdf", width = 4.5,height = 4.3)
+
+
+
+# Fig1d -----------------------------
+# HCC scRNA-seq data preprocessing
+library(Matrix)
+library(Seurat)
+library(tidyverse)
+setwd("/home/chenweiming/Project/HCC_scRNAseq/luo/")
+
+seu = readRDS("/home/chenweiming/Project/HCC_scRNAseq/luo/data/HCC_scRNA.rds")
+seu
+
+# QC and filtering 
+dir.create('QC')
+proj_name <- data.frame(proj_name=rep("QC",ncol(seu)))
+rownames(proj_name) <- row.names(seu@meta.data)
+seu <- AddMetaData(seu, proj_name)
+rm(proj_name)
+head(seu@meta.data)
+Vln<-VlnPlot(seu, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), pt.size = 0, ncol = 3, group.by = "proj_name",raster=FALSE)
+Vln
+# ggsave("QC/QC-before.pdf", plot = Vln, width = 7, height = 5.5)
+
+dim(seu)
+
+minicount = 500 
+maxicount = 30000 
+minGene=500  
+maxGene=6000 
+mt=25        
+
+#filtering 
+seu <- subset(seu, subset = percent.mt < mt & nFeature_RNA >= minGene & nFeature_RNA <= maxGene & nCount_RNA >= minicount & nCount_RNA <= maxicount)
+
+genes_obtained = names(rowSums(seu@assays$RNA@counts)[rowSums(seu@assays$RNA@counts) >= 3])
+mito.genes <- grep('^MT-', genes_obtained, value = TRUE)
+ribo.genes <- grep('^RPL|^RPS|^MRPL|^MRPS', genes_obtained, value = TRUE)
+genes_obtained = genes_obtained[!genes_obtained %in% c(mito.genes, ribo.genes)]
+seu <- seu[rownames(seu) %in% genes_obtained, ]
+
+saveRDS(seu, file = "/home/chenweiming/Project/HCC_scRNAseq/luo/data/HCC_scRNA.rds")
+
+library(SeuratDisk)
+SaveH5Seurat(seu, filename = "data/HCC_scRNA.h5Seurat", overwrite = T)
+Convert("data/HCC_scRNA.h5Seurat", dest = "h5ad", overwrite = T)# save HCC_ICC.h5ad

@@ -12,7 +12,7 @@ dir.create("./FigS1", showWarnings = FALSE, recursive = TRUE)
 
 data <- read.csv("./data/TCGA_LIHC.csv", check.names = FALSE)
 
-data$AFP_status <- ifelse(as.numeric(data$AFP) >= 20, "AFP_POS", "AFP_NEG")
+data$AFP_status <- ifelse(as.numeric(data$AFP) >= 20, "AFP+", "AFP-")
 
 data <- data %>%
   mutate(
